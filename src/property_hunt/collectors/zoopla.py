@@ -1,3 +1,5 @@
+"""Zoopla parser that extracts listing candidates from JSON-LD blocks."""
+
 from __future__ import annotations
 
 import json
@@ -11,11 +13,15 @@ from property_hunt.models import ListingType, RawListing
 
 
 class ZooplaCollector(BaseCollector):
+    """Collector for Zoopla search-result pages."""
+
     platform = "zoopla"
 
     def parse_html(
         self, html: str, *, source_url: str, listing_type: ListingType
     ) -> Iterable[RawListing]:
+        """Read ItemList JSON-LD and emit raw listing candidates."""
+
         payloads = extract_json_ld(html)
         listings: list[RawListing] = []
         seen: set[str] = set()
@@ -42,6 +48,8 @@ class ZooplaCollector(BaseCollector):
 
 
 def extract_json_ld(html: str) -> list[dict[str, Any]]:
+    """Return JSON-LD dicts embedded in a page."""
+
     blocks = re.findall(
         r"<script[^>]+type=[\"']application/ld\+json[\"'][^>]*>(.*?)</script>",
         html,
@@ -61,6 +69,8 @@ def extract_json_ld(html: str) -> list[dict[str, Any]]:
 
 
 def _iter_item_list_elements(payload: dict[str, Any]) -> Iterable[dict[str, Any]]:
+    """Yield itemListElement entries from a JSON-LD payload."""
+
     elements = payload.get("itemListElement", [])
     if isinstance(elements, dict):
         elements = [elements]
@@ -68,4 +78,3 @@ def _iter_item_list_elements(payload: dict[str, Any]) -> Iterable[dict[str, Any]
         for element in elements:
             if isinstance(element, dict):
                 yield element
-

@@ -1,3 +1,5 @@
+"""Parser fixture tests for JSON-backed platform collectors."""
+
 from pathlib import Path
 
 from property_hunt.collectors.rightmove import RightmoveCollector
@@ -9,6 +11,8 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
 
 def test_rightmove_next_data_parser() -> None:
+    """Rightmove parser should read property URLs from __NEXT_DATA__."""
+
     html = (FIXTURES / "rightmove.html").read_text(encoding="utf-8")
     listings = list(
         RightmoveCollector().parse_html(
@@ -24,6 +28,8 @@ def test_rightmove_next_data_parser() -> None:
 
 
 def test_zoopla_json_ld_parser() -> None:
+    """Zoopla parser should read listing URLs from JSON-LD ItemList blocks."""
+
     html = (FIXTURES / "zoopla.html").read_text(encoding="utf-8")
     listings = list(
         ZooplaCollector().parse_html(

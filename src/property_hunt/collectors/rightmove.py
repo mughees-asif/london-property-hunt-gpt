@@ -1,3 +1,5 @@
+"""Rightmove parser that extracts listing candidates from __NEXT_DATA__ JSON."""
+
 from __future__ import annotations
 
 import json
@@ -11,11 +13,15 @@ from property_hunt.models import ListingType, RawListing
 
 
 class RightmoveCollector(BaseCollector):
+    """Collector for Rightmove search-result pages."""
+
     platform = "rightmove"
 
     def parse_html(
         self, html: str, *, source_url: str, listing_type: ListingType
     ) -> Iterable[RawListing]:
+        """Walk embedded Next.js state and return property-like objects."""
+
         payload = extract_next_data(html)
         if not payload:
             return []
@@ -55,6 +61,8 @@ class RightmoveCollector(BaseCollector):
 
 
 def extract_next_data(html: str) -> dict[str, Any] | None:
+    """Extract the embedded Next.js JSON payload from a Rightmove page."""
+
     match = re.search(
         r"<script[^>]+id=[\"']__NEXT_DATA__[\"'][^>]*>(.*?)</script>",
         html,
@@ -69,6 +77,8 @@ def extract_next_data(html: str) -> dict[str, Any] | None:
 
 
 def walk_dicts(value: Any) -> Iterable[dict[str, Any]]:
+    """Yield every dict in a nested JSON-like structure."""
+
     if isinstance(value, dict):
         yield value
         for child in value.values():
@@ -76,4 +86,3 @@ def walk_dicts(value: Any) -> Iterable[dict[str, Any]]:
     elif isinstance(value, list):
         for child in value:
             yield from walk_dicts(child)
-

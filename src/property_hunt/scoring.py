@@ -1,3 +1,5 @@
+"""Deterministic ranking rules applied after @llm.extract normalisation."""
+
 from __future__ import annotations
 
 from datetime import date, timedelta
@@ -18,6 +20,8 @@ YOUNG_OR_STUDENT_TERMS = (
 
 
 def score_listing(listing: Listing, config: AppConfig) -> Listing:
+    """Assign priority and notes to a canonical listing."""
+
     notes: list[str] = []
 
     if listing.listing_type == ListingType.ROOM:
@@ -32,6 +36,8 @@ def score_listing(listing: Listing, config: AppConfig) -> Listing:
 
 
 def _score_room(listing: Listing, config: AppConfig, notes: list[str]) -> Priority:
+    """Score shared-room listings with bed-count and household guardrails."""
+
     text = f"{listing.title} {listing.flatmates} {listing.notes}".lower()
     if listing.bed_count is not None and listing.bed_count >= 4:
         notes.append("Skipped: room listing is in a 4+ bedroom property")
@@ -67,6 +73,8 @@ def _score_room(listing: Listing, config: AppConfig, notes: list[str]) -> Priori
 
 
 def _score_studio(listing: Listing, config: AppConfig, notes: list[str]) -> Priority:
+    """Score studio and 1-bed listings against area, budget, and timing."""
+
     budget_ok = listing.price_pcm is not None and listing.price_pcm <= config.criteria.studio_budget
     if not budget_ok:
         notes.append("Over studio budget or price unknown")
@@ -83,6 +91,8 @@ def _score_studio(listing: Listing, config: AppConfig, notes: list[str]) -> Prio
 
 
 def _area_tier(area: str, config: AppConfig) -> str:
+    """Return primary, secondary, or other for configured target areas."""
+
     area_normalized = area.lower()
     if any(candidate.lower() in area_normalized for candidate in config.criteria.primary_areas):
         return "primary"
@@ -92,6 +102,8 @@ def _area_tier(area: str, config: AppConfig) -> str:
 
 
 def _available_by_target(value: str, target: date) -> bool:
+    """Treat missing/ambiguous dates as acceptable and explicit late dates as not."""
+
     if not value:
         return True
     try:
@@ -102,6 +114,8 @@ def _available_by_target(value: str, target: date) -> bool:
 
 
 def _append_notes(existing: str, notes: list[str]) -> str:
+    """Append scoring notes without losing extraction notes."""
+
     if not existing:
         return "; ".join(notes)
     return f"{existing}; {'; '.join(notes)}"

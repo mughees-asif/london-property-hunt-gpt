@@ -1,3 +1,5 @@
+"""Shared listing and enum models consumed by @collectors, @scoring, and @tracker."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -8,11 +10,15 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 
 class ListingType(str, Enum):
+    """Supported rental search categories."""
+
     ROOM = "room"
     STUDIO = "studio"
 
 
 class Priority(str, Enum):
+    """Scoring outcomes used by @scoring and persisted by @tracker."""
+
     HIGH = "High"
     MEDIUM = "Medium"
     LOW = "Low"
@@ -20,12 +26,16 @@ class Priority(str, Enum):
 
 
 class BillsIncluded(str, Enum):
+    """Normalised bills-included state for tracker and email output."""
+
     YES = "Yes"
     NO = "No"
     UNKNOWN = "Unknown"
 
 
 class Furnished(str, Enum):
+    """Normalised furnishing state for ranking and tracker output."""
+
     YES = "Yes"
     NO = "No"
     UNKNOWN = "Unknown"
@@ -33,6 +43,8 @@ class Furnished(str, Enum):
 
 @dataclass(frozen=True)
 class RawListing:
+    """Raw platform payload emitted by @collectors before GPT/heuristic extraction."""
+
     platform: str
     listing_type: ListingType
     source_url: str
@@ -44,6 +56,8 @@ class RawListing:
 
 @dataclass
 class Listing:
+    """Canonical listing record passed through @scoring, @tracker, and @email."""
+
     title: str
     platform: str
     url: str
@@ -65,13 +79,19 @@ class Listing:
 
     @property
     def canonical_url(self) -> str:
+        """Return the URL form used for deduplication."""
+
         return canonicalize_url(self.url)
 
     @property
     def is_trackable(self) -> bool:
+        """Return whether the listing should be persisted in @tracker."""
+
         return bool(self.url) and self.priority != Priority.SKIP
 
     def to_tracker_row(self) -> list[Any]:
+        """Convert the listing into the XLSX row order expected by @tracker.xlsx."""
+
         bed_value: Any = self.bed_count
         if self.listing_type == ListingType.STUDIO and bed_value is None:
             bed_value = "Studio/1-Bed"
@@ -96,6 +116,8 @@ class Listing:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> Listing:
+        """Build a listing from GPT or report payloads with defensive coercion."""
+
         listing_type = ListingType(str(payload.get("listing_type", "room")).lower())
         priority_raw = str(payload.get("priority", Priority.LOW.value)).title()
         priority = (
@@ -128,6 +150,8 @@ class Listing:
 
 
 def canonicalize_url(url: str) -> str:
+    """Strip tracking params and normalise casing for URL dedupe."""
+
     parts = urlsplit(url.strip())
     query = [
         (key, value)
@@ -140,6 +164,8 @@ def canonicalize_url(url: str) -> str:
 
 
 def _int_or_none(value: Any) -> int | None:
+    """Coerce loose numeric values from platform/GPT payloads."""
+
     if value is None or value == "":
         return None
     if isinstance(value, int):
@@ -150,6 +176,8 @@ def _int_or_none(value: Any) -> int | None:
 
 
 def _enum_or_default(enum_type: type[Enum], value: Any, default: Enum) -> Any:
+    """Map external enum-like strings to known enum members."""
+
     if value is None:
         return default
     normalized = str(value).strip().title()

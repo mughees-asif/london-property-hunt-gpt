@@ -1,3 +1,5 @@
+"""XLSX tracker persistence for scored listings from @pipeline."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -37,17 +39,23 @@ PRIORITY_FILLS = {
 
 @dataclass(frozen=True)
 class TrackerResult:
+    """Summary of tracker writes consumed by @email.render and run reports."""
+
     added: list[Listing]
     duplicates: list[Listing]
 
 
 def init_tracker(path: Path) -> None:
+    """Create a fresh tracker workbook at the requested path."""
+
     wb = _new_workbook()
     path.parent.mkdir(parents=True, exist_ok=True)
     wb.save(path)
 
 
 def append_new_listings(path: Path, listings: list[Listing]) -> TrackerResult:
+    """Append unseen trackable listings and return added/duplicate splits."""
+
     wb = _load_or_create(path)
     seen_urls = existing_urls(wb)
     added: list[Listing] = []
@@ -75,6 +83,8 @@ def append_new_listings(path: Path, listings: list[Listing]) -> TrackerResult:
 
 
 def existing_urls(wb: object) -> set[str]:
+    """Load canonical URLs already present in both tracker sheets."""
+
     urls: set[str] = set()
     for sheet_name in (ROOM_SHEET, STUDIO_SHEET):
         if sheet_name not in wb.sheetnames:
@@ -88,6 +98,8 @@ def existing_urls(wb: object) -> set[str]:
 
 
 def _load_or_create(path: Path) -> object:
+    """Load an existing workbook or initialise a compatible one."""
+
     try:
         from openpyxl import load_workbook
     except ImportError as exc:
@@ -101,6 +113,8 @@ def _load_or_create(path: Path) -> object:
 
 
 def _new_workbook() -> object:
+    """Build an empty workbook with all expected sheets and formatting."""
+
     try:
         from openpyxl import Workbook
     except ImportError as exc:
@@ -116,6 +130,8 @@ def _new_workbook() -> object:
 
 
 def _ensure_workbook_shape(wb: object) -> None:
+    """Create missing sheets and apply header-level formatting."""
+
     for sheet_name in (ROOM_SHEET, STUDIO_SHEET):
         if sheet_name not in wb.sheetnames:
             wb.create_sheet(sheet_name)
@@ -128,6 +144,8 @@ def _ensure_workbook_shape(wb: object) -> None:
 
 
 def _format_header(ws: object) -> None:
+    """Apply tracker header values and styles."""
+
     from openpyxl.styles import Font, PatternFill
 
     fill = PatternFill("solid", fgColor="1F3864")
@@ -140,6 +158,8 @@ def _format_header(ws: object) -> None:
 
 
 def _set_column_widths(ws: object) -> None:
+    """Set readable default column widths for manual review."""
+
     widths = {
         "A": 45,
         "B": 12,
@@ -163,6 +183,8 @@ def _set_column_widths(ws: object) -> None:
 
 
 def _format_listing_row(ws: object, row_index: int, listing: Listing) -> None:
+    """Apply priority fill and hyperlink style to one appended row."""
+
     from openpyxl.styles import PatternFill
 
     if listing.priority in PRIORITY_FILLS:
@@ -175,5 +197,6 @@ def _format_listing_row(ws: object, row_index: int, listing: Listing) -> None:
 
 
 def _sheet_for(listing: Listing) -> str:
-    return ROOM_SHEET if listing.listing_type == ListingType.ROOM else STUDIO_SHEET
+    """Route room and whole-unit listings to their tracker sheets."""
 
+    return ROOM_SHEET if listing.listing_type == ListingType.ROOM else STUDIO_SHEET

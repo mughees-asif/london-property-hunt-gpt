@@ -1,2 +1,1 @@
-"""Email rendering and delivery helpers."""
-
+"""Email rendering and delivery helpers used after @tracker writes."""

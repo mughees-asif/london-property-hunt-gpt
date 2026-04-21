@@ -1,3 +1,5 @@
+"""Base HTTP/browser collection helpers shared by platform parsers."""
+
 from __future__ import annotations
 
 import time
@@ -17,11 +19,15 @@ USER_AGENT = (
 
 
 class BaseCollector(ABC):
+    """Template for platform collectors that emit @models.RawListing objects."""
+
     platform: str
 
     def collect_url(
         self, url: str, listing_type: ListingType, *, use_browser: bool
     ) -> list[RawListing]:
+        """Fetch a configured search URL and parse raw listing candidates."""
+
         html = fetch_html(url, use_browser=use_browser)
         return list(self.parse_html(html, source_url=url, listing_type=listing_type))
 
@@ -29,10 +35,14 @@ class BaseCollector(ABC):
     def parse_html(
         self, html: str, *, source_url: str, listing_type: ListingType
     ) -> Iterable[RawListing]:
+        """Convert a platform result page into raw listing candidates."""
+
         raise NotImplementedError
 
 
 def fetch_html(url: str, *, use_browser: bool = False) -> str:
+    """Fetch HTML via urllib or Playwright when JavaScript rendering is needed."""
+
     if use_browser:
         browser_html = _fetch_html_with_playwright(url)
         if browser_html:
@@ -44,6 +54,8 @@ def fetch_html(url: str, *, use_browser: bool = False) -> str:
 
 
 def _fetch_html_with_playwright(url: str) -> str | None:
+    """Render a page in Chromium and return the final DOM HTML."""
+
     try:
         from playwright.sync_api import sync_playwright
     except ImportError as exc:
@@ -63,11 +75,15 @@ def _fetch_html_with_playwright(url: str) -> str | None:
 
 
 def absolutize_url(source_url: str, maybe_url: str | None) -> str | None:
+    """Resolve relative platform links against the source URL."""
+
     if not maybe_url:
         return None
     return urljoin(source_url, unescape(maybe_url))
 
 
 def clean_text(value: object) -> str:
+    """Collapse HTML-decoded text for stable downstream prompts and reports."""
+
     text = unescape(str(value or ""))
     return " ".join(text.split())

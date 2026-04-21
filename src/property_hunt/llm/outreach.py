@@ -1,3 +1,5 @@
+"""Generate and persist outreach copy for high-priority @models.Listing records."""
+
 from __future__ import annotations
 
 import re
@@ -9,6 +11,8 @@ from property_hunt.models import Listing, Priority
 
 
 def generate_outreach(listing: Listing, config: AppConfig, *, use_gpt: bool) -> str:
+    """Return GPT-written outreach with a deterministic fallback."""
+
     if use_gpt and config.openai.enable_outreach:
         try:
             return _generate_with_gpt(listing, config)
@@ -18,6 +22,8 @@ def generate_outreach(listing: Listing, config: AppConfig, *, use_gpt: bool) -> 
 
 
 def save_outreach_files(listings: list[Listing], config: AppConfig, *, use_gpt: bool) -> int:
+    """Write outreach files for high-priority listings and return the count."""
+
     count = 0
     for listing in listings:
         if listing.priority != Priority.HIGH:
@@ -32,6 +38,8 @@ def save_outreach_files(listings: list[Listing], config: AppConfig, *, use_gpt: 
 
 
 def fallback_outreach(listing: Listing, config: AppConfig) -> str:
+    """Render safe outreach text when GPT is disabled or unavailable."""
+
     detail = listing.area or "the listing"
     price = f" at GBP {listing.price_pcm} pcm" if listing.price_pcm else ""
     return (
@@ -44,6 +52,8 @@ def fallback_outreach(listing: Listing, config: AppConfig) -> str:
 
 
 def _generate_with_gpt(listing: Listing, config: AppConfig) -> str:
+    """Ask GPT for one concise message tied to the listing detail."""
+
     system = (
         "Write concise UK rental outreach messages. "
         "Return only the message text. Keep it under 100 words."
@@ -60,11 +70,14 @@ def _generate_with_gpt(listing: Listing, config: AppConfig) -> str:
 
 
 def _outreach_filename(listing: Listing) -> str:
+    """Create a filesystem-safe outreach filename for a listing."""
+
     slug = re.sub(r"[^a-z0-9]+", "-", f"{listing.platform}-{listing.area}-{listing.title}".lower())
     slug = slug.strip("-")[:90] or "listing"
     return f"outreach-{slug}.txt"
 
 
 def list_outreach_files(outreach_dir: Path) -> list[Path]:
-    return sorted(outreach_dir.glob("outreach-*.txt"))
+    """Return generated outreach files in stable order."""
 
+    return sorted(outreach_dir.glob("outreach-*.txt"))

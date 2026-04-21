@@ -1,3 +1,5 @@
+"""End-to-end orchestration from @collectors to @tracker and @email."""
+
 from __future__ import annotations
 
 import json
@@ -18,6 +20,8 @@ from property_hunt.tracker.xlsx import TrackerResult, append_new_listings
 
 @dataclass(frozen=True)
 class RunResult:
+    """Small CLI-facing summary of one workflow execution."""
+
     raw_count: int
     parsed_count: int
     added_count: int
@@ -36,6 +40,8 @@ def run_pipeline(
     dry_run: bool,
     send_email: bool,
 ) -> RunResult:
+    """Run collection, extraction, scoring, persistence, outreach, and summary output."""
+
     config.ensure_dirs()
     warnings: list[str] = []
     raw_listings = collect_raw_listings(config, use_browser=use_browser, warnings=warnings)
@@ -83,6 +89,8 @@ def run_pipeline(
 def collect_raw_listings(
     config: AppConfig, *, use_browser: bool, warnings: list[str]
 ) -> list[RawListing]:
+    """Collect raw listings from all configured search URLs."""
+
     collected: list[RawListing] = []
     for search_url in config.search_urls:
         try:
@@ -106,6 +114,8 @@ def _write_run_report(
     warnings: list[str],
     email_path: Path | None,
 ) -> None:
+    """Persist a machine-readable JSON report for audit/debugging."""
+
     report = {
         "run_at": datetime.now().isoformat(timespec="seconds"),
         "parsed_count": len(parsed),
@@ -123,6 +133,8 @@ def _write_run_report(
 
 
 def _listing_report_item(listing: Listing) -> dict[str, object]:
+    """Serialise one listing into the run-report shape."""
+
     return {
         "title": listing.title,
         "platform": listing.platform,

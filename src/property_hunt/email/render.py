@@ -1,3 +1,5 @@
+"""HTML summary rendering for the final @pipeline output."""
+
 from __future__ import annotations
 
 from collections import Counter
@@ -17,6 +19,8 @@ def render_summary_email(
     skipped: list[Listing],
     outreach_count: int,
 ) -> str:
+    """Render an actionable HTML summary from tracker write results."""
+
     counts = Counter(listing.priority.value for listing in added)
     platform_counts = Counter(listing.platform for listing in added)
     title = f"London Property Hunt - {datetime.now().strftime('%Y-%m-%d %H:%M')}"
@@ -58,6 +62,8 @@ def render_summary_email(
 
 
 def write_email_file(config: AppConfig, html: str) -> Path:
+    """Persist rendered HTML to the configured outbox directory."""
+
     filename = f"property-hunt-{datetime.now().strftime('%Y%m%d-%H%M%S')}.html"
     path = config.paths.outbox_dir / filename
     path.write_text(html, encoding="utf-8")
@@ -65,6 +71,8 @@ def write_email_file(config: AppConfig, html: str) -> Path:
 
 
 def _section(title: str, listings: list[Listing], *, include_message: bool) -> str:
+    """Render a priority section with listing cards."""
+
     if not listings:
         return f"<h2>{escape(title)}</h2><p>No listings.</p>"
     cards = "\n".join(
@@ -74,6 +82,8 @@ def _section(title: str, listings: list[Listing], *, include_message: bool) -> s
 
 
 def _listing_card(listing: Listing, *, include_message: bool) -> str:
+    """Render one listing card for the email body."""
+
     message = ""
     if include_message and listing.outreach_message:
         message = (
@@ -99,6 +109,8 @@ def _listing_card(listing: Listing, *, include_message: bool) -> str:
 
 
 def _skipped_section(skipped: list[Listing]) -> str:
+    """Render skipped listings as a compact list."""
+
     if not skipped:
         return "<h2>Skipped</h2><p>No skipped listings.</p>"
     items = "\n".join(
@@ -110,6 +122,8 @@ def _skipped_section(skipped: list[Listing]) -> str:
 
 
 def _counter_text(counter: Counter[str]) -> str:
+    """Format a Counter for human-readable email stats."""
+
     if not counter:
         return "none"
     return ", ".join(f"{key}: {value}" for key, value in sorted(counter.items()))

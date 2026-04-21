@@ -1,3 +1,5 @@
+"""TOML config loading for @cli and dependency injection into @pipeline."""
+
 from __future__ import annotations
 
 import tomllib
@@ -11,6 +13,8 @@ from .models import ListingType
 
 @dataclass(frozen=True)
 class ProfileConfig:
+    """Tenant profile values used by @llm.outreach and @email."""
+
     name: str
     age: int
     profession: str
@@ -22,6 +26,8 @@ class ProfileConfig:
 
 @dataclass(frozen=True)
 class CriteriaConfig:
+    """Search and scoring rules consumed by @scoring."""
+
     primary_areas: tuple[str, ...]
     secondary_areas: tuple[str, ...]
     room_budget: int
@@ -34,6 +40,8 @@ class CriteriaConfig:
 
 @dataclass(frozen=True)
 class PathsConfig:
+    """Resolved local output paths for tracker, run reports, and summaries."""
+
     hunt_dir: Path
     tracker_path: Path
     outreach_dir: Path
@@ -43,6 +51,8 @@ class PathsConfig:
 
 @dataclass(frozen=True)
 class OpenAIConfig:
+    """OpenAI model settings for @llm.extract and @llm.outreach."""
+
     model: str
     reasoning_effort: str
     enable_extraction: bool
@@ -51,6 +61,8 @@ class OpenAIConfig:
 
 @dataclass(frozen=True)
 class EmailConfig:
+    """Email delivery settings used by @email.render and @email.gmail."""
+
     to: str
     from_address: str
     mode: str
@@ -59,6 +71,8 @@ class EmailConfig:
 
 @dataclass(frozen=True)
 class SearchUrl:
+    """One configured platform search endpoint."""
+
     platform: str
     listing_type: ListingType
     url: str
@@ -66,6 +80,8 @@ class SearchUrl:
 
 @dataclass(frozen=True)
 class AppConfig:
+    """Fully resolved application configuration passed through the workflow."""
+
     profile: ProfileConfig
     criteria: CriteriaConfig
     paths: PathsConfig
@@ -74,6 +90,8 @@ class AppConfig:
     search_urls: tuple[SearchUrl, ...]
 
     def ensure_dirs(self) -> None:
+        """Create all local output directories required by a run."""
+
         self.paths.hunt_dir.mkdir(parents=True, exist_ok=True)
         self.paths.outreach_dir.mkdir(parents=True, exist_ok=True)
         self.paths.run_dir.mkdir(parents=True, exist_ok=True)
@@ -81,6 +99,8 @@ class AppConfig:
 
 
 def load_config(path: str | Path) -> AppConfig:
+    """Load a TOML file into typed config objects."""
+
     config_path = Path(path).expanduser()
     with config_path.open("rb") as handle:
         payload = tomllib.load(handle)
@@ -142,6 +162,8 @@ def load_config(path: str | Path) -> AppConfig:
 
 
 def _parse_search_url(item: dict[str, Any]) -> SearchUrl:
+    """Parse a single [[search.urls]] entry."""
+
     return SearchUrl(
         platform=str(item["platform"]).strip().lower(),
         listing_type=ListingType(str(item["listing_type"]).strip().lower()),
@@ -150,6 +172,8 @@ def _parse_search_url(item: dict[str, Any]) -> SearchUrl:
 
 
 def _parse_date(value: Any) -> date:
+    """Parse TOML-native or ISO date values."""
+
     if isinstance(value, date):
         return value
     return date.fromisoformat(str(value))

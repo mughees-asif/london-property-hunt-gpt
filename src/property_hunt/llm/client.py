@@ -1,3 +1,5 @@
+"""Thin Responses API adapter used by @llm.extract and @llm.outreach."""
+
 from __future__ import annotations
 
 import os
@@ -7,6 +9,8 @@ from property_hunt.config import OpenAIConfig
 
 
 def response_text(config: OpenAIConfig, *, system: str, user: str) -> str:
+    """Call OpenAI Responses and return the best-effort text output."""
+
     if not os.getenv("OPENAI_API_KEY"):
         raise RuntimeError("OPENAI_API_KEY is not set")
     try:
@@ -28,4 +32,3 @@ def response_text(config: OpenAIConfig, *, system: str, user: str) -> str:
     if output_text:
         return str(output_text)
     return str(response)
-

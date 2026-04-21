@@ -1,3 +1,5 @@
+"""Optional SMTP delivery for rendered @email summaries."""
+
 from __future__ import annotations
 
 import os
@@ -8,6 +10,8 @@ from property_hunt.config import AppConfig
 
 
 def send_smtp(config: AppConfig, *, subject: str, html: str) -> None:
+    """Send an HTML summary through SMTP using environment credentials."""
+
     host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
     port = int(os.environ.get("SMTP_PORT", "587"))
     username = os.environ.get("SMTP_USERNAME")
@@ -26,4 +30,3 @@ def send_smtp(config: AppConfig, *, subject: str, html: str) -> None:
         smtp.starttls()
         smtp.login(username, password)
         smtp.send_message(message)
-

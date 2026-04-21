@@ -1,3 +1,5 @@
+"""Command-line interface for running @pipeline and tracker setup."""
+
 from __future__ import annotations
 
 import argparse
@@ -8,6 +10,8 @@ from property_hunt.tracker.xlsx import init_tracker
 
 
 def main(argv: list[str] | None = None) -> None:
+    """Parse CLI args and dispatch to workflow commands."""
+
     parser = argparse.ArgumentParser(prog="property-hunt")
     subparsers = parser.add_subparsers(dest="command", required=True)
 

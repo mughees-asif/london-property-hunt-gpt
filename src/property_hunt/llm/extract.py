@@ -1,3 +1,5 @@
+"""Normalise @collectors.RawListing objects into @models.Listing records."""
+
 from __future__ import annotations
 
 import json
@@ -10,6 +12,8 @@ from property_hunt.models import BillsIncluded, Furnished, Listing, ListingType,
 
 
 def listing_from_raw(raw: RawListing, config: AppConfig, *, use_gpt: bool) -> Listing:
+    """Build a listing using heuristics first, then optional GPT enrichment."""
+
     baseline = heuristic_listing(raw, config)
     if not use_gpt or not config.openai.enable_extraction:
         return baseline
@@ -30,6 +34,8 @@ def listing_from_raw(raw: RawListing, config: AppConfig, *, use_gpt: bool) -> Li
 
 
 def extract_with_gpt(raw: RawListing, config: AppConfig) -> dict[str, Any]:
+    """Ask GPT to extract strict JSON fields from a raw platform payload."""
+
     system = (
         "You extract UK rental listing data. Return only JSON. "
         "Do not invent missing values. Use ISO dates only when explicit."
@@ -70,6 +76,8 @@ def extract_with_gpt(raw: RawListing, config: AppConfig) -> dict[str, Any]:
 
 
 def heuristic_listing(raw: RawListing, config: AppConfig) -> Listing:
+    """Extract a conservative listing without networked model calls."""
+
     data = raw.data or {}
     text = " ".join(
         value
@@ -100,6 +108,8 @@ def heuristic_listing(raw: RawListing, config: AppConfig) -> Listing:
 
 
 def _parse_json_object(text: str) -> dict[str, Any]:
+    """Parse a JSON object from plain or fenced model output."""
+
     cleaned = text.strip()
     if cleaned.startswith("```"):
         cleaned = re.sub(r"^```(?:json)?", "", cleaned).strip()
@@ -115,6 +125,8 @@ def _parse_json_object(text: str) -> dict[str, Any]:
 
 
 def _first_string(data: dict[str, Any], keys: tuple[str, ...]) -> str:
+    """Return the first non-empty string for a sequence of candidate keys."""
+
     for key in keys:
         value = data.get(key)
         if value:
@@ -123,6 +135,8 @@ def _first_string(data: dict[str, Any], keys: tuple[str, ...]) -> str:
 
 
 def _guess_area(text: str, config: AppConfig) -> str:
+    """Find the first configured area mentioned in listing text."""
+
     normalized = text.lower()
     for area in (*config.criteria.primary_areas, *config.criteria.secondary_areas):
         if area.lower() in normalized:
@@ -131,11 +145,15 @@ def _guess_area(text: str, config: AppConfig) -> str:
 
 
 def _guess_postcode(text: str) -> str:
+    """Extract a UK postcode when one is explicit in text."""
+
     match = re.search(r"\b[A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2}\b", text, flags=re.I)
     return match.group(0).upper() if match else ""
 
 
 def _guess_price(data: dict[str, Any], text: str) -> int | None:
+    """Find a monthly rent from structured keys or visible text."""
+
     for key in ("price_pcm", "price", "amount", "rent"):
         value = data.get(key)
         if isinstance(value, dict):
@@ -155,6 +173,8 @@ def _guess_price(data: dict[str, Any], text: str) -> int | None:
 
 
 def _money_to_int(value: Any) -> int | None:
+    """Coerce money-like strings or dicts into integer pounds."""
+
     if value is None:
         return None
     if isinstance(value, int):
@@ -167,6 +187,8 @@ def _money_to_int(value: Any) -> int | None:
 
 
 def _guess_beds(data: dict[str, Any], text: str, listing_type: ListingType) -> int | None:
+    """Infer explicit bed count from structured fields or text."""
+
     for key in ("bed_count", "bedrooms", "numberOfBedrooms", "beds"):
         value = data.get(key)
         if isinstance(value, int):
@@ -180,6 +202,8 @@ def _guess_beds(data: dict[str, Any], text: str, listing_type: ListingType) -> i
 
 
 def _guess_bills(text: str) -> BillsIncluded:
+    """Classify whether bills are included from text hints."""
+
     normalized = text.lower()
     if "bills included" in normalized or "including bills" in normalized:
         return BillsIncluded.YES
@@ -189,6 +213,8 @@ def _guess_bills(text: str) -> BillsIncluded:
 
 
 def _guess_furnished(text: str) -> Furnished:
+    """Classify furnishing state from text hints."""
+
     normalized = text.lower()
     if "unfurnished" in normalized:
         return Furnished.NO
@@ -198,10 +224,11 @@ def _guess_furnished(text: str) -> Furnished:
 
 
 def _guess_flatmates(text: str) -> str:
+    """Capture simple household signals for @scoring."""
+
     lower = text.lower()
     if "student" in lower:
         return "student signal"
     if "professional" in lower:
         return "professional signal"
     return ""
-

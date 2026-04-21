@@ -1,2 +1,1 @@
-"""OpenAI-backed extraction and writing helpers."""
-
+"""OpenAI-backed extraction and writing helpers used by @pipeline."""
