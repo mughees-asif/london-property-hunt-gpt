@@ -12,6 +12,40 @@ Automated London rental search powered by OpenAI GPT, Playwright, an XLSX tracke
 - Generates outreach `.txt` files for high-priority listings.
 - Writes an HTML email summary to `outbox/`, with optional SMTP sending.
 
+## Workflow
+
+```mermaid
+flowchart TD
+    A["config.toml"] --> B["CLI: property-hunt run"]
+    B --> C["Search URLs"]
+    C --> D["Platform collectors"]
+    D --> D1["Rightmove: __NEXT_DATA__"]
+    D --> D2["Zoopla: JSON-LD"]
+    D --> D3["OpenRent / SpareRoom: link text"]
+    D1 --> E["RawListing records"]
+    D2 --> E
+    D3 --> E
+    E --> F["Heuristic extraction"]
+    F --> G{"GPT enabled?"}
+    G -->|Yes| H["OpenAI extraction enrichment"]
+    G -->|No| I["Canonical Listing records"]
+    H --> I
+    I --> J["Deterministic scoring"]
+    J --> K{"Priority"}
+    K -->|Skip| L["Skipped in run report"]
+    K -->|High / Medium / Low| M["URL dedupe"]
+    M --> N["XLSX tracker"]
+    N --> O["High-priority outreach files"]
+    N --> P["HTML email summary"]
+    P --> Q{"Email mode"}
+    Q -->|html_file| R["outbox/*.html"]
+    Q -->|smtp + --send| S["SMTP delivery"]
+    L --> T["runs/*.json"]
+    O --> T
+    R --> T
+    S --> T
+```
+
 ## Repository Structure
 
 ```text
@@ -140,4 +174,3 @@ Inspired by `mikepapadim/london-property-hunt-public` ([Link](https://github.com
 ## License
 
 MIT.
-
